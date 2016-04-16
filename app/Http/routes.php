@@ -2,6 +2,7 @@
 use App\Product;
 use App\Order;
 use Illuminate\Http\Request;
+
 /*
 |--------------------------------------------------------------------------
 | Application Routes
@@ -20,11 +21,8 @@ use Illuminate\Http\Request;
  */
 Route::get('/', function () {
     $product_purchased_id = old('product_id');
-    $product_purchased = FALSE;
-    if($product_purchased_id){
-        $product_purchased = DB::table('products')->where('id', $product_purchased_id)->first();
-    }
-    $products = Product::orderBy('title', 'asc')->get();
+    $product_purchased = Product::product_cached($product_purchased_id);
+    $products = Product::product_list_cached('title', 'asc');
     $orders = Order::orderBy('created_at', 'asc')->get();
     return view('home', [
         'product_purchased' => $product_purchased,
@@ -36,14 +34,11 @@ Route::get('/', function () {
 });
 
 /**
- * Display Broduct List
+ * Display Product List
  * Show's all products with more info link
  */
 Route::get('/list', function () {
-    /* Cache the product list as it won't change in this demo */
-    $products = Cache::rememberForever('products', function() {
-        return Product::orderBy('title', 'asc')->get();
-    });
+    $products = Product::product_list_cached('title', 'asc');
     return view('list', [
         'products' => $products,
         'active_nav' => 'list',
@@ -64,7 +59,7 @@ Route::get('/detail/{id}', function ($id) {
     }
     $products_viewed[$id] = $id;
     Session::set('products_viewed', $products_viewed); 
-    $product = DB::table('products')->where('id', $id)->first();
+    $product = Product::product_cached($id);
     return view('detail', [
         'product' => $product,
         'active_nav' => ''
